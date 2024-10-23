@@ -11,9 +11,18 @@ private:
 
 public:
     Myvector();                             
-    Myvector(const Myvector& other);          
+    Myvector(const Myvector& other);      
+    Myvector(initializer_list<T> init_list);
     Myvector& operator=(const Myvector& other); 
     ~Myvector();                              
+
+    T* begin() {
+        return arr; // Возвращаем указатель на первый элемент
+    }
+
+    T* end() {
+        return arr + size_of_Vec; // Возвращаем указатель на элемент после последнего
+    }
 
     void MPUSH(T name);                       
     void MPUSH(T name, int index);            
@@ -24,9 +33,8 @@ public:
     int size() const;                        
     int memory_use() const;                  
     void print() const;   
-    void save_to_file(const string& filename, bool overwrite = false) const;   
-    void load_from_file(const string& filename);
-    
+    void load_from_file(const string& filename, const string& name_structure);
+    void save_to_file(const string& filename, const string& name_structure) const;
 };
 
 template <typename T>
@@ -45,6 +53,19 @@ Myvector<T>::Myvector(const Myvector& other) {
         arr[i] = other.arr[i];
     }
 }
+
+template <typename T>
+Myvector<T>::Myvector(initializer_list<T> init_list) {
+    size_of_Vec = init_list.size();  // Размер массива соответствует количеству элементов
+    memory_size = size_of_Vec * 2;  
+    arr = new T[memory_size];
+
+    int i = 0;
+    for (const T& item : init_list) {
+        arr[i++] = item;  // Копируем элементы из списка
+    }
+}
+
 
 template <typename T>
 Myvector<T>& Myvector<T>::operator=(const Myvector& other) {
@@ -124,7 +145,7 @@ T Myvector<T>::MGET(int index) const {
     if (index <= size_of_Vec && index >= 0) {
         return arr[index];
     }
-    throw std::out_of_range("Index out of range!!!");
+    throw out_of_range("Index out of range!!!");
 }
 
 template <typename T>
@@ -164,32 +185,93 @@ void Myvector<T>::print() const {
     cout << "\n";
 }
 
+
 template <typename T>
-void Myvector<T>::load_from_file(const string& filename) {
-    ifstream file(filename);
-    if (file.is_open()) {
-        T value;
-        while (file >> value) {
-            MPUSH(value);  
+void Myvector<T>::save_to_file(const string& filename, const string& name_structure) const {
+    // Читаем существующие данные из файла
+    ifstream read_file(filename);
+    Myvector<string> lines;
+    string line;
+    bool structure_found = false;
+
+    if (read_file.is_open()) {
+        while (getline(read_file, line)) {
+            lines.MPUSH(line);
         }
+        read_file.close();
+    } else {
+        cerr << "Ошибка открытия файла для чтения.\n";
+        return;
+    }
+
+    ofstream write_file(filename);
+    if (!write_file.is_open()) {
+        cerr << "Ошибка открытия файла для записи.\n";
+        return;
+    }
+
+    for (auto& existing_line : lines) {
+        if (existing_line.find(name_structure + " : ") == 0) {
+            structure_found = true;
+
+            // Заменяем строку структуры новыми значениями
+            write_file << name_structure << " : ";
+            for (int i = 0; i < size_of_Vec; ++i) { 
+                if (i > 0) write_file << ", ";
+                write_file << arr[i];
+            }
+            write_file << endl;
+        } else {
+            write_file << existing_line << endl;
+        }
+    }
+
+    // Если структура не найдена, добавляем её
+    if (!structure_found) {
+        write_file << name_structure << " : ";
+        for (int i = 0; i < size_of_Vec; ++i) { 
+            if (i > 0) write_file << ", ";
+            write_file << arr[i]; 
+        }
+        write_file << endl;
+    }
+
+    write_file.close();
+}
+
+template <typename T>
+void Myvector<T>::load_from_file(const string& filename, const string& name_structure) {
+    ifstream file(filename);
+    
+    if (file.is_open()) {
+        string line;
+        size_of_Vec = 0;  
+        bool structure_found = false;
+
+        while (getline(file, line)) {
+            // Проверяем, является ли строка началом нового массива
+            if (line.find(name_structure + " : ") != string::npos) {
+                structure_found = true; // Нашли массив с указанным именем
+                size_t pos = line.find(':');
+                string values = line.substr(pos + 1); 
+                stringstream ss(values);
+                string value;
+
+                // Парсим значения, разделенные запятыми
+                while (getline(ss, value, ',')) {
+                    if (size_of_Vec >= memory_size) {
+                        resize(memory_size * 2); // Увеличиваем размер при необходимости
+                    }
+                    arr[size_of_Vec++] = value;  
+                }
+                break; 
+            }
+        }
+
+
         file.close();
     } else {
-        cerr << "Error opening the file for reading. \n";
+        cerr << "Ошибка открытия файла для чтения.\n";
     }
 }
 
-template <typename T>
-void Myvector<T>::save_to_file(const string& filename, bool overwrite) const {
-    ios_base::openmode mode = overwrite ? ios::trunc : ios::app;
-    ofstream file(filename, mode);  
-    if (!file) {
-        cerr << "Error opening a file for writing: " << filename << endl; 
-        return; 
-    }
-
-    for (int i = 0; i < size_of_Vec; i++) {  
-        file << arr[i] << "\n";
-    }
-
-    file.close();
-}

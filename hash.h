@@ -1,6 +1,7 @@
 #pragma once
 
-#include "library.h"
+#include "massive_vec.h"
+#include <cstdint>
 
 using namespace std;
 
@@ -18,11 +19,11 @@ private:
     int size;
 
     int hashfunction(const string& key) {
-        int hash = 0;
+        uint32_t hash = 5381;
         for (char c : key) {
-            hash += c;
+            hash = ((hash << 5) + hash) + c; // hash * 33 + c
         }
-        return hash % size; // We use the size of the table
+        return hash % size;
     }
 
 public:
@@ -33,9 +34,8 @@ public:
     string get(const string& key);                      
     void remove(const string& key);                    
     void print();     
-    void save_new_element_to_file(const string& filename, const string& key, const string& value) const;
-    void load_from_file(const string& filename);       
-    void save_to_file(const string& filename, bool overwrite) const;                 
+    void load_from_file(const string& filename, const string& name_structure);
+    void save_to_file(const string& filename, const string& name_structure) const;
 };
 
 
@@ -58,34 +58,58 @@ Hashtable::~Hashtable() {
     delete[] table;
 }
 
+// void Hashtable::add(const string& key, const string& value) {
+//     int index = hashfunction(key);
+//     Node* prev = nullptr;
+//     Node* current = table[index];
+
+//     while (current != nullptr) { // we go through the chain
+//         if (current->key == key) {
+//             current->value = value;
+//             return;
+//         }
+//         prev = current;
+//         current = current->next;
+//     }
+
+//     Node* new_node = new Node(key, value);
+
+//     if (prev == nullptr) {
+//         table[index] = new_node;
+//     }
+//     else {
+//         prev->next = new_node; // Node to the end
+//     }
+// }
+
+
+
 void Hashtable::add(const string& key, const string& value) {
     int index = hashfunction(key);
-    Node* prev = nullptr;
     Node* current = table[index];
 
-    while (current != nullptr) { // we go through the chain
+
+    // Проходим по цепочке, чтобы найти существующий ключ
+    while (current != nullptr) {
         if (current->key == key) {
-            current->value = value;
+            current->value = value; // Обновляем значение, если ключ уже существует
             return;
         }
-        prev = current;
         current = current->next;
     }
 
+    // Если ключ не найден, создаем новый узел и добавляем его в начало цепочки
     Node* new_node = new Node(key, value);
-
-    if (prev == nullptr) {
-        table[index] = new_node;
-    }
-    else {
-        prev->next = new_node; // Node to the end
-    }
+    new_node->next = table[index];
+    table[index] = new_node;
 }
+
+
 
 string Hashtable::get(const string& key) {
     int index = hashfunction(key);
-
     Node* current = table[index];
+
     while (current != nullptr) {
         if (current->key == key) {
             return current->value;
@@ -135,53 +159,120 @@ void Hashtable::print() {
     }
 }
 
-void Hashtable::save_new_element_to_file(const string& filename, const string& key, const string& value) const {
-    ofstream file(filename, ios::app);
-    if (file.is_open()) {
-        file << key << ":" << value << "\n"; 
-        file.close();
-    } else {
-        cerr << "Error opening the file for writing.\n";
-    }
-}
 
-void Hashtable::load_from_file(const string& filename) {
+
+void Hashtable::load_from_file(const string& filename, const string& name_structure) {
     ifstream file(filename);
-    if (!file) {
-        cerr << "Error opening the file for reading: " << filename << endl;
+    
+    if (!file.is_open()) {
+        cerr << "Error opening the file for reading.\n";
         return;
     }
 
     string line;
+    bool structure_found = false;
+
     while (getline(file, line)) {
-        if (!line.empty()) {
-            size_t colon_pos = line.find(':');
-            if (colon_pos != string::npos) {
-                string key = line.substr(0, colon_pos); 
-                string value = line.substr(colon_pos + 1); 
-                add(key, value); 
+        // Проверяем, является ли строка началом структуры хеш-таблицы
+        if (line.find(name_structure + " : ") != string::npos) {
+            structure_found = true; // Нашли хеш-таблицу с указанным именем
+            size_t pos = line.find(':');
+            string values = line.substr(pos + 1); 
+            stringstream ss(values);
+            string pair;
+
+            // Парсим ключ-значение, разделенные запятыми
+            while (getline(ss, pair, ',')) {
+                size_t start = pair.find('[');
+                size_t middle = pair.find(':');
+                size_t end = pair.find(']');
+
+                if (start != string::npos && middle != string::npos && end != string::npos) {
+                    string key = pair.substr(start + 1, middle - start - 1);  // Получаем ключ
+                    string value = pair.substr(middle + 2, end - middle - 2); // Получаем значение
+
+                    // Добавляем пару ключ-значение в хеш-таблицу
+                    add(key, value);
+                }
             }
+            break;
         }
     }
 
     file.close();
+
 }
 
-void Hashtable::save_to_file(const string& filename, bool overwrite) const {
-    ios_base::openmode mode = overwrite ? ios::trunc : ios::app;
-    ofstream file(filename, mode);
-    if (!file) {
-        cerr << "Error opening the file for writing: " << filename << endl;
+
+void Hashtable::save_to_file(const string& filename, const string& name_structure) const {
+    // Читаем существующие данные из файла
+    ifstream read_file(filename);
+    Myvector<string> lines;
+    string line;
+    bool structure_found = false;
+
+    if (read_file.is_open()) {
+        while (getline(read_file, line)) {
+            lines.MPUSH(line);
+        }
+        read_file.close();
+    } else {
+        cerr << "Error opening the file for reading.\n";
         return;
     }
 
-    for (int i = 0; i < size; ++i) {
-        Node* current = table[i];
-        while (current != nullptr) {
-            file << current->key << ":" << current->value << "\n";
-            current = current->next;
+    ofstream write_file(filename);
+    if (!write_file.is_open()) {
+        cerr << "Ошибка открытия файла для записи.\n";
+        return;
+    }
+
+    // Проверяем наличие структуры с именем name_structure
+    for (auto& existing_line : lines) {
+        if (existing_line.find(name_structure + " : ") == 0) {
+            structure_found = true;
+
+            // Заменяем строку структуры новыми значениями
+            write_file << name_structure << " : ";
+            
+            // Проходим по всем элементам хеш-таблицы
+            bool first_entry = true;
+            for (int i = 0; i < size; ++i) {
+                Node* current = table[i];
+                while (current != nullptr) {
+                    if (!first_entry) {
+                        write_file << ", "; // Добавляем разделитель
+                    }
+                    write_file << "[" << current->key << ": " << current->value << "]";
+                    first_entry = false;
+                    current = current->next;
+                }
+            }
+            write_file << endl;
+        } else {
+            write_file << existing_line << endl; // Сохраняем остальные строки
         }
     }
 
-    file.close();
+    // Если структура не найдена, добавляем её в конец файла
+    if (!structure_found) {
+        write_file << name_structure << " : ";
+        bool first_entry = true;
+        for (int i = 0; i < size; ++i) {
+            Node* current = table[i];
+            while (current != nullptr) {
+                if (!first_entry) {
+                    write_file << ", "; // Добавляем разделитель
+                }
+                write_file << "[" << current->key << ": " << current->value << "]";
+                first_entry = false;
+                current = current->next;
+            }
+        }
+        write_file << endl;
+    }
+
+    write_file.close();
 }
+
+

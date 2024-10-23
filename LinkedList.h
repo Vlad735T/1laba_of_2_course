@@ -28,8 +28,9 @@ public:
     void remove(string name);              
     void search(string name);              
     void print();   
-    void save_to_file(const string& filename, bool overwrite) const;
-    void load_from_file(const string& filename);       
+    void load_from_file(const string& filename, const string& name_structure);
+    void save_to_file(const string& filename, const string& name_structure) const;
+    
 };
 
 
@@ -179,36 +180,108 @@ void LinkedList::print() {
     cout << "\n";
 }
 
-void LinkedList::load_from_file(const string& filename) {
+void LinkedList::load_from_file(const string& filename, const string& name_structure) {
     ifstream file(filename);
-    if (!file) {
-        cerr << "Error opening the file for reading: " << filename << endl;
+    
+    if (!file.is_open()) {
+        cerr << "Ошибка открытия файла для чтения.\n";
         return;
     }
 
-    string name;
-    while (getline(file, name)) {
-        if (!name.empty()) {
-            addtail(name);  // Добавляем элемент в конец списка
+    string line;
+    bool structure_found = false;
+
+    while (!is_empty()) {
+        delhead();
+    }
+
+    while (getline(file, line)) {
+        // Проверяем, является ли строка началом новой структуры
+        if (line.find(name_structure + " : ") != string::npos) {
+            structure_found = true; // Найдена структура с указанным именем
+            size_t pos = line.find(':');
+            string values = line.substr(pos + 1); 
+            stringstream ss(values);
+            string value;
+
+            // Парсим значения, разделенные запятыми, и добавляем их в список
+            while (getline(ss, value, ',')) {
+                value.erase(0, value.find_first_not_of(" \t"));  
+                addtail(value);  
+            }
+            break;  
         }
     }
 
     file.close();
 }
 
-void LinkedList::save_to_file(const string& filename, bool overwrite) const {
-    ios_base::openmode mode = overwrite ? ios::trunc : ios::app;
-    ofstream file(filename, mode);
-    if (!file) {
-        cerr << "Error opening the file for writing: " << filename << endl;
+
+void LinkedList::save_to_file(const string& filename, const string& name_structure) const {
+    ifstream read_file(filename);
+    LinkedList lines;  
+    string line;
+    bool structure_found = false;
+
+    if (read_file.is_open()) {
+        while (getline(read_file, line)) {
+            lines.addtail(line);
+        }
+        read_file.close();
+    } else {
+        cerr << "Ошибка открытия файла для чтения.\n";
         return;
     }
 
-    Node* current = head;
-    while (current != nullptr) {
-        file << current->person << "\n";  // Записываем данные в файл
-        current = current->next;
+    ofstream write_file(filename);
+    if (!write_file.is_open()) {
+        cerr << "Ошибка открытия файла для записи.\n";
+        return;
     }
 
-    file.close();
+    Node* current = lines.head;
+
+    while (current != nullptr) {
+        string& existing_line = current->person;  // Получаем строку из временного списка
+        if (existing_line.find(name_structure + " : ") == 0) {
+            structure_found = true;
+
+            // Заменяем строку структуры новыми значениями из списка
+            write_file << name_structure << " : ";
+            Node* data_node = head;  
+            bool first = true;
+            while (data_node != nullptr) {
+                if (!first) {
+                    write_file << ", "; 
+                }
+                write_file << data_node->person;  // Записываем элемент
+                first = false;
+                data_node = data_node->next; 
+            }
+            write_file << endl; 
+        } else {
+            // Записываем все остальные строки как есть
+            write_file << existing_line << endl;
+        }
+        current = current->next;  // Переходим к следующему элементу во временном списке
+    }
+
+    // Если структура не найдена, добавляем её в конец файла
+    if (!structure_found) {
+        write_file << name_structure << " : ";
+        Node* data_node = head;  
+        bool first = true;
+        while (data_node != nullptr) {
+            if (!first) {
+                write_file << ", "; 
+            }
+            write_file << data_node->person; 
+            first = false;
+            data_node = data_node->next;  // Переходим к следующему элементу
+        }
+        write_file << endl; 
+    }
+
+    write_file.close();  
 }
+

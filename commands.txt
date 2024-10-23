@@ -1,0 +1,148 @@
+Command for 1_lab:
+massive, llist, flist, queue, stack, hash, FBT
+g++ -o test test.cpp 
+
+vector:///////////////////
+
+
+./test --file file.massive --query 'MPUSH massive dsfdsf123' 
+./test --file file.massive --query 'MPUSH massive 4567890'
+./test --file file.massive --query 'MPUSH massive 123432' 
+./test --file file.massive --query 'MPUSH massive wsx 0'
+./test --file file.massive --query 'MDEL massive 0' 
+./test --file file.massive --query 'MGET massive 1' 
+./test --file file.massive --query 'MPRINT massive' 
+./test --file file.massive --query 'SIZE massive' 
+./test --file file.massive --query 'MSET massive dsfsdfgv 1'
+
+./test --file file.massive --query 'MPUSH mymassive 123' 
+./test --file file.massive --query 'MPUSH mymassive 123432' 
+./test --file file.massive --query 'MPUSH mymassive wsx 0'
+./test --file file.massive --query 'MDEL mymassive 0' 
+./test --file file.massive --query 'MGET mymassive 1' 
+./test --file file.massive --query 'MPRINT mymassive' 
+./test --file file.massive --query 'SIZE mymassive' 
+./test --file file.massive --query 'MSET mymassive dsfsdfgv 1'
+
+
+ForwardList.h: /////////////////////////////
+
+
+./test --file file.flist --query 'ADDHEAD Fflist dsfdsf123' 
+./test --file file.flist --query 'ADDTAIL Fflist asd'  
+./test --file file.flist --query 'DELHEAD Fflist' 
+./test --file file.flist --query 'DELTAIL Fflist' 
+./test --file file.flist --query 'FREMOVE Fflist 321'
+./test --file file.flist --query 'FSEARCH Fflist 321' 
+./test --file file.flist --query 'FPRINT Fflist' 
+
+./test --file file.flist --query 'ADDHEAD flist 123' 
+./test --file file.flist --query 'ADDTAIL flist asd' 
+./test --file file.flist --query 'DELHEAD flist' 
+./test --file file.flist --query 'DELTAIL flist' 
+./test --file file.flist --query 'FREMOVE flist 123'
+./test --file file.flist --query 'FREMOVE flist ZXC' 
+./test --file file.flist --query 'FSEARCH flist 321' 
+./test --file file.flist --query 'FPRINT flist' 
+
+
+LinkedList.h://////////////////////////////
+
+
+./test --file file.llist --query 'LADDHEAD llist dsfdsf123' 
+./test --file file.llist --query 'LADDTAIL llist 321'  
+./test --file file.llist --query 'LSEARCH llist 321'
+./test --file file.llist --query 'LDELHEAD llist' 
+./test --file file.llist --query 'LDELTAIL llist'
+./test --file file.llist --query 'LREMOVE llist dsfdsf123' 
+./test--file file.llist --query 'LPRINT llist' 
+
+./test --file file.llist --query 'LADDHEAD Llist 123' 
+./test --file file.llist --query 'LADDTAIL Llist 321' 
+./test --file file.llist --query 'LSEARCH Llist 321'
+./test --file file.llist --query 'LDELHEAD Llist' 
+./test --file file.llist --query 'LDELTAIL Llist'
+./test --file file.llist --query 'LREMOVE Llist dsfdsf123'
+./test --file file.llist --query 'LPRINT Llist' 
+
+
+Queue.h://////////////////////////
+
+
+./test --file file.queue --query 'QPUSH queue qwaszx'  
+./test --file file.queue --query 'QPUSH queue 321'  
+./test --file file.queue --query 'QPUSH queue 654' 
+./test --file file.queue --query 'QPOP queue' 
+./test --file file.queue --query 'QPRINT queue'  
+
+./test --file file.queue --query 'QPUSH squeue trhdgb'  
+./test --file file.queue --query 'QPOP squeue' 
+./test --file file.queue --query 'QPRINT squeue' 
+
+
+Stack.h:////////////////////////////////
+
+
+./test --file file.stack --query 'SPUSH stack qwaszx' 
+./test --file file.stack --query 'SPUSH stack 123' 
+./test --file file.stack --query 'SPOP stack' 
+./test --file file.stack --query 'SPRINT stack' 
+
+./test --file file.stack --query 'SPUSH Stack 123' 
+./test --file file.stack --query 'SPUSH Stack 456' 
+./test --file file.stack --query 'SPUSH Stack 789' 
+./test --file file.stack --query 'SPOP Stack' 
+./test --file file.stack --query 'SPRINT Stack'
+
+
+hash.h:////////////////////////////////////
+
+
+./test --file file.hash --query 'HADD hash 123 321'
+./test --file file.hash --query 'HADD hash asfF key'
+./test --file file.hash --query 'HADD hash value value'
+./test --file file.hash --query 'HADD hash asd zxc'
+./test --file file.hash --query 'HADD hash cake value'
+./test --file file.hash --query 'HADD hash cake mother'
+./test --file file.hash --query 'HADD hash horse jumpe'
+./test --file file.hash --query 'HADD hash XCVBrtyvubin456789JIUHYGUTF MNBVCFGHBJNKKtyjio90876$^&'
+				
+./test --file file.hash --query 'HGET hash asd'
+./test --file file.hash --query 'HREMOVE hash asd'
+./test --file file.hash --query 'HPRINT hash'
+
+
+./test --file file.hash --query 'HADD Hash 123 321'
+./test --file file.hash --query 'HADD Hash asfF key'
+./test --file file.hash --query 'HADD Hash value value'
+./test --file file.hash --query 'HADD Hash asd zxc'
+./test --file file.hash --query 'HADD Hash XCVBrtyvubin456789JIUHYGUTF MNBVCFGHBJNKKtyjio90876$^&'
+
+./test --file file.hash --query 'HGET Hash asd'
+./test --file file.hash --query 'HREMOVE Hash asd'
+./test --file file.hash --query 'HPRINT Hash'
+
+
+FBT:///////////////////////////////////
+
+
+./test --file file.FBT --query 'TADD tree 123'
+./test --file file.FBT --query 'TADD tree 543' 
+./test --file file.FBT --query 'TADD tree 57' 
+./test --file file.FBT --query 'TADD tree 4634' 
+./test --file file.FBT --query 'TPRINT tree'  
+./test --file file.FBT --query 'TREEPRINT tree' 
+./test --file file.FBT --query 'TFIND tree 123'
+./test --file file.FBT --query 'TFULL tree' 
+
+./test --file file.FBT --query 'TADD TREE 123' 
+./test --file file.FBT --query 'TADD TREE 543' 
+./test --file file.FBT --query 'TADD TREE 57' 
+./test --file file.FBT --query 'TADD TREE 4634'
+./test --file file.FBT --query 'TPRINT TREE'
+./test --file file.FBT --query 'TREEPRINT TREE '
+./test --file file.FBT --query 'TFIND TREE  123'
+./test --file file.FBT --query 'TFULL TREE'
+
+
+//////////////////////////////////////////

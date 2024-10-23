@@ -30,8 +30,8 @@ public:
     void remove(string name);
     bool search(string name);
     void print() const;
-    void load_from_file(const string& filename);
-    void save_to_file(const string& filename, bool overwrite) const;
+    void load_from_file(const string& filename, const string& name_structure);
+    void save_to_file(const string& filename, const string& name_structure) const;
 };
 
 ForwardList::ForwardList() : head(nullptr), tail(nullptr) {}
@@ -176,36 +176,112 @@ void ForwardList::print() const {
     cout << "\n";
 }
 
-void ForwardList::load_from_file(const string& filename) {
+
+void ForwardList::load_from_file(const string& filename, const string& name_structure) {
     ifstream file(filename);
-    if (!file) {
-        cerr << "Error opening the file for reading: " << filename << endl;
+    
+    if (!file.is_open()) {
+        cerr << "Ошибка открытия файла для чтения.\n";
         return;
     }
 
-    string name;
-    while (getline(file, name)) {
-        if (!name.empty()) {
-            addtail(name);  // Добавление элементов из файла
+    string line;
+    bool structure_found = false;
+
+    while (!is_empty()) {
+        delhead();
+    }
+
+    while (getline(file, line)) {
+        // Проверяем, является ли строка началом новой структуры
+        if (line.find(name_structure + " : ") != string::npos) {
+            structure_found = true; // Найдена структура с указанным именем
+            size_t pos = line.find(':');
+            string values = line.substr(pos + 1); 
+            stringstream ss(values);
+            string value;
+
+            // Парсим значения, разделенные запятыми, и добавляем их в список
+            while (getline(ss, value, ',')) {
+                value.erase(0, value.find_first_not_of(" \t"));  // Удаляем пробелы перед значениями
+                addtail(value);  
+            }
+            break;  
         }
     }
 
+
     file.close();
 }
 
-void ForwardList::save_to_file(const string& filename, bool overwrite) const {
-    ios_base::openmode mode = overwrite ? ios::trunc : ios::app;
-    ofstream file(filename, mode);
-    if (!file) {
-        cerr << "Error opening the file for writing: " << filename << endl;
+
+void ForwardList::save_to_file(const string& filename, const string& name_structure) const {
+    ifstream read_file(filename);
+    ForwardList lines;
+    string line;
+    bool structure_found = false;
+
+    // Читаем файл построчно и сохраняем все строки во временный список
+    if (read_file.is_open()) {
+        while (getline(read_file, line)) {
+            lines.addtail(line);
+        }
+        read_file.close();
+    } else {
+        cerr << "Ошибка открытия файла для чтения.\n";
         return;
     }
 
-    Node* current = head;
+    // Открываем файл для записи (перезапись)
+    ofstream write_file(filename);
+    if (!write_file.is_open()) {
+        cerr << "Ошибка открытия файла для записи.\n";
+        return;
+    }
+
+    Node* current = lines.head;
+
     while (current != nullptr) {
-        file << current->person << "\n";
+        string& existing_line = current->person;
+        if (existing_line.find(name_structure + " : ") == 0) {
+            structure_found = true;
+
+            // Заменяем строку структуры новыми значениями из списка
+            write_file << name_structure << " : ";
+            Node* data_node = head;
+            bool first = true;
+            while (data_node != nullptr) {
+                if (!first) {
+                    write_file << ", ";
+                }
+                write_file << data_node->person;
+                first = false;
+                data_node = data_node->next;
+            }
+            write_file << endl;
+        } else {
+            // Записываем все остальные строки как есть
+            write_file << existing_line << endl;
+        }
         current = current->next;
     }
 
-    file.close();
+    // Если структура не найдена, добавляем её в конец файла
+    if (!structure_found) {
+        write_file << name_structure << " : ";
+        Node* data_node = head;
+        bool first = true;
+        while (data_node != nullptr) {
+            if (!first) {
+                write_file << ", ";
+            }
+            write_file << data_node->person;
+            first = false;
+            data_node = data_node->next;
+        }
+        write_file << endl;
+    }
+
+    write_file.close();
 }
+
